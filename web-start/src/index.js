@@ -106,6 +106,7 @@ function loadMessages() {
   // query to load last 12 messages
   const recentMessagesQuery = query(collection(getFirestore(), 'messages'), orderBy('timestamp', 'desc'), limit(12));
 
+  
   onSnapshot(recentMessagesQuery, function(snapshot) {
     snapshot.docChanges().forEach(function(change) {
       if (change.type === 'removed') {
@@ -122,6 +123,31 @@ function loadMessages() {
 // This first saves the image in Firebase storage.
 async function saveImageMessage(file) {
   // TODO 9: Posts a new image as a message.
+  try {
+    // 1 - add "placeholder, loading" message. will get replaced with the shared image later on
+    const messageRef = await addDoc(collection(getFirestore(), 'messages'), {
+      name: getUserName(),
+      imageUrl: LOADING_IMAGE_URL,
+      profilePicUrl: getProfilePicUrl(),
+      timestamp: serverTimestamp()
+    });
+
+    // 2 - upload the image to cloud storage
+    const filePath = `${getAuth().currentUser.uid}/${messageRef.id}/${file.name}`;
+    const newImageRef = ref(getStorage(), filePath);
+    const fileSnapshot = await uploadBytesResumable(newImageRef, file);
+    
+    // 3 - generate public URL for the file
+    const publicURL = await getDownloadURL(newImageRef);
+
+    // 4 - update the placeholder message with the image publicURL
+    updateDoc(messageRef, {
+      imageUrl: publicURL,
+      storageUri: fileSnapshot.metadata.fullPath
+    });
+  } catch (error) {
+    console.error("there was an err uploading file to Cloud Storage: ", error);
+  }
 }
 
 // Saves the messaging device token to Cloud Firestore.
