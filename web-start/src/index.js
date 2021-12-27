@@ -49,38 +49,55 @@ import { getFirebaseConfig } from './firebase-config.js';
 
 // Signs-in Friendly Chat.
 async function signIn() {
-  alert('TODO: Implement Google Sign-In');
+  // alert('TODO: Implement Google Sign-In');
   // TODO 1: Sign in Firebase with credential from the Google user.
+  var provider = new GoogleAuthProvider();
+  await signInWithPopup(getAuth(), provider)
 }
 
 // Signs-out of Friendly Chat.
 function signOutUser() {
   // TODO 2: Sign out of Firebase.
+  signOut(getAuth());
 }
 
 // Initiate firebase auth
 function initFirebaseAuth() {
   // TODO 3: Subscribe to the user's signed-in status
+  onAuthStateChanged(getAuth(), authStateObserver)
 }
 
 // Returns the signed-in user's profile Pic URL.
 function getProfilePicUrl() {
   // TODO 4: Return the user's profile pic URL.
+  return getAuth().currentUser.photoURL || '/images/profile_placeholder.png';
 }
 
 // Returns the signed-in user's display name.
 function getUserName() {
   // TODO 5: Return the user's display name.
+  return getAuth().currentUser.displayName;
 }
 
 // Returns true if a user is signed-in.
 function isUserSignedIn() {
   // TODO 6: Return true if a user is signed-in.
+  return !!getAuth().currentUser;
 }
 
 // Saves a new message on the Cloud Firestore.
 async function saveMessage(messageText) {
   // TODO 7: Push a new message to Cloud Firestore.
+  try {
+    await addDoc(collection(getFirestore(), 'messages'), {
+      name: getUserName(),
+      text: messageText,
+      profilePicUrl: getProfilePicUrl(),
+      timestamp: serverTimestamp()
+    });
+  } catch (error) {
+    console.log("Error writing new message to Firestore Database.", error)
+  }
 }
 
 // Loads chat messages history and listens for upcoming ones.
@@ -344,6 +361,7 @@ mediaCaptureElement.addEventListener('change', onMediaFileSelected);
 
 const firebaseAppConfig = getFirebaseConfig();
 // TODO 0: Initialize Firebase
+initializeApp(firebaseAppConfig)
 
 // TODO 12: Initialize Firebase Performance Monitoring
 
