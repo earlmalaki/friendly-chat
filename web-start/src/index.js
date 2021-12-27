@@ -153,11 +153,41 @@ async function saveImageMessage(file) {
 // Saves the messaging device token to Cloud Firestore.
 async function saveMessagingDeviceToken() {
   // TODO 10: Save the device token in Cloud Firestore
+  try {
+    const currentToken = await getToken(getMessaging());
+    if (currentToken) {
+      console.log('Got FCM device token: ', currentToken);
+      // Save device token to cloud firestore
+      const tokenRef = doc(getFirestore(), 'fcmTokens', currentToken);
+      await setDoc(tokenRef, {
+        uid: getAuth().currentUser.uid
+      });
+
+      onMessage(getMessaging(), (message) => {
+        console.log('New foreground notification from Firebase Messaging!', message.notification);
+      });
+    } else {
+      // Need to request permission to show notif
+      requestNotificationsPermissions();
+    }
+  } catch (error) {
+    console.log('Unable to get messaging token: ', error);
+  }
 }
 
 // Requests permissions to show notifications.
 async function requestNotificationsPermissions() {
   // TODO 11: Request permissions to send notifications.
+  console.log("Requesting notifications permission");
+  const permission = await Notification.requestPermission();
+
+  if (permission === 'granted') {
+    console.log("Permission granted.");
+    await saveMessagingDeviceToken();
+
+  } else {
+    console.log("Unable to get notif permission.");
+  }
 }
 
 // Triggered when a file is selected via the media picker.
